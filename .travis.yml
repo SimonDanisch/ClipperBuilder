@@ -1,0 +1,33 @@
+language: julia
+os:
+- linux
+julia:
+- 0.6
+notifications:
+  email: false
+git:
+  depth: 99999999
+cache:
+  timeout: 1000
+  directories:
+  - downloads
+env:
+  global:
+  - BINARYBUILDER_DOWNLOADS_CACHE=downloads
+  - BINARYBUILDER_AUTOMATIC_APPLE=true
+sudo: required
+before_script:
+- julia -e 'Pkg.clone("https://github.com/JuliaPackaging/BinaryProvider.jl")'
+- julia -e 'Pkg.clone("https://github.com/JuliaPackaging/BinaryBuilder.jl"); Pkg.build()'
+script:
+- julia build_tarballs.jl
+deploy:
+  provider: releases
+  api_key:
+    secure: jeWoyKwOhWjglFcVg5p4R2622Zk9whjoBueO+Qu8JJkFYhcUIFQwtZIGyfUPctgE6jktvKiU85+HYkkWr+8OMyriEfiZRx45aRNCeu6dwj1lr00mNS4NPCL1REjREKAlSmzoAs5Lbv5Gvu2Zv4g9s77fMPModT6c/NS4xytQJDkaMm9HxAUGml4kGLGW4uE7m3kTmSwEsfLZsxGQiBn4x30lBwU+P44FmqApuv+77Ojl270JhNDhrwvemr39POAXIAg1fzcuHD3Ix/OPSNwlZ9kOyLRcMKGOvk1rClPYfHHzmT9MrsLxuVDPPhKl+1zpYBDSJim/+ozt2PbvMhxQzskK8FnPfgjgh0/o4pesFyQ34mJsuDAaaIf6Cd60q6yGZO4WRf0QP18V2qy9EmOcZeocM621f3t+I3hVNRdzCj+A7G+GEIx47y29TvAP6lO68vxiY0PmjHkfs/dpFMN/LfIZMYN1sdR7Yo4zTE8ZxYbkXevzUNAaQMiGeps1auJsJybe38IXDlejOcJ4QOjBCX2T4khl8es9L/R5SVgb7pXtiIWBL09F5Vf2A7XCdWn++14G98OatFDKX0W7LDk3sQ3F32alKa1S7KvL9ODqYheBumUIqwBT6gVYXp7QpWvFgcYjOflGrf3vCrnes35stRg/HKTX2gW+UJGlhxvEZkQ=
+  file_glob: true
+  file: products/*
+  skip_cleanup: true
+  on:
+    repo: JuliaGeometry/TetgenBuilder
+    tags: true

@@ -1,44 +1,56 @@
+# Note that this script can accept some limited command-line arguments, run
+# `julia build_tarballs.jl --help` to see a usage message.
 using BinaryBuilder
 
-# These are the platforms built inside the wizard
-platforms = [
-    BinaryProvider.Linux(:i686, :glibc),
-    BinaryProvider.Linux(:x86_64, :glibc),
-    BinaryProvider.Linux(:aarch64, :glibc),
-    BinaryProvider.Linux(:armv7l, :glibc),
-    BinaryProvider.Linux(:powerpc64le, :glibc),
-    BinaryProvider.MacOS(),
-    BinaryProvider.Windows(:i686),
-    BinaryProvider.Windows(:x86_64)
-]
-
-
-# If the user passed in a platform (or a few, comma-separated) on the
-# command-line, use that instead of our default platforms
-if length(ARGS) > 0
-    platforms = platform_key.(split(ARGS[1], ","))
-end
-info("Building for $(join(triplet.(platforms), ", "))")
+name = "Clipper"
+version = v"1.0.0"
 
 # Collection of sources required to build Clipper
 sources = [
-    "https://github.com/Voxel8/Clipper.jl.git" =>
-    "1bf969d44b1e81c7a4be3ba09020a11d2e4a305b",
+    "https://github.com/SimonDanisch/ClipperBuilder.git" =>
+    "9ea1878235d518d5e14bce35a94924a34bab8b68",
+
 ]
 
+# Bash recipe for building across all platforms
 script = raw"""
 cd $WORKSPACE/srcdir
-cd Clipper.jl/src/
-g++ -c -fPIC -std=c++11 clipper.cpp cclipper.cpp
-if [[ ${target} == *-mingw32 ]]; then     mkdir ${DESTDIR}/bin;     g++ -shared -o ${DESTDIR}/bin/cclipper.dll clipper.o cclipper.o; else     mkdir ${DESTDIR}/lib;     if [[ ${target} == *-darwin* ]]; then         g++ -shared -o ${DESTDIR}/lib/cclipper.dylib clipper.o cclipper.o;     else         g++ -shared -o ${DESTDIR}/lib/cclipper.so clipper.o cclipper.o;     fi; fi
+cd ClipperBuilder/
+${CXX} -c -fPIC -std=c++11 clipper.cpp cclipper.cpp
+libdir="lib"
+if [[ ${target} == *-mingw32 ]]; then     libdir="bin"; else     libdir="lib"; fi
+mkdir ${prefix}/${libdir}
+${CXX} -shared -o ${prefix}/${libdir}/cclipper.${dlext} clipper.o cclipper.o;
 exit
-
 """
 
-products = prefix -> [
-    LibraryProduct(prefix,"cclipper")
+# These are the platforms we will build for by default, unless further
+# platforms are passed in on the command line
+platforms = [
+    Linux(:i686, :glibc),
+    Linux(:x86_64, :glibc),
+    Linux(:aarch64, :glibc),
+    Linux(:armv7l, :glibc, :eabihf),
+    Linux(:powerpc64le, :glibc),
+    Linux(:i686, :musl),
+    Linux(:x86_64, :musl),
+    Linux(:aarch64, :musl),
+    Linux(:armv7l, :musl, :eabihf),
+    MacOS(:x86_64),
+    FreeBSD(:x86_64),
+    Windows(:i686),
+    Windows(:x86_64)
 ]
 
+# The products that we will ensure are always built
+products(prefix) = [
+    LibraryProduct(prefix, "cclipper", :cclipper)
+]
 
-# Build the given platforms using the given sources
-hashes = autobuild(pwd(), "Clipper", platforms, sources, script, products)
+# Dependencies that must be installed before this package can be built
+dependencies = [
+
+]
+
+# Build the tarballs, and possibly a `build.jl` as well.
+build_tarballs(ARGS, name, version, sources, script, platforms, products, dependencies)
