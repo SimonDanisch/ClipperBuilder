@@ -29,5 +29,5 @@ deploy:
   file: products/*
   skip_cleanup: true
   on:
-    repo: JuliaGeometry/TetgenBuilder
+    repo: SimonDanisch/ClipperBuilder
     tags: true
